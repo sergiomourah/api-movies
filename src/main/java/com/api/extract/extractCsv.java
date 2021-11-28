@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Log
 @Service
@@ -36,8 +37,8 @@ public class extractCsv {
 	public void run() {
 		try {
 			
-			List<CsvFile> moviesCsv = this.readFile();
-			if(!moviesCsv.isEmpty()) {
+			Optional<List<CsvFile>> moviesCsv = this.readFile();
+			if(moviesCsv.isPresent()) {
 				movieService.saveMovies(this.extractMovieByFile(moviesCsv));
 			}
 		
@@ -46,33 +47,34 @@ public class extractCsv {
 		}
 	}
 	
-	private List<CsvFile> readFile() throws IOException, URISyntaxException {
+	private Optional<List<CsvFile>> readFile() throws IOException, URISyntaxException {
 		URI uri = ClassLoader.getSystemResource(PATH).toURI();
 		Path path = Paths.get(uri);
 			
 		Reader reader = Files.newBufferedReader(path);
-		List<CsvFile> moviesCsv = new CsvToBeanBuilder(reader)
-			.withType(CsvFile.class)
-			.withSkipLines(1)
-			.withSeparator(SEMICOLON)
-			.build()
-			.parse();
-		
-		return moviesCsv;
+
+		return Optional.ofNullable(new CsvToBeanBuilder(reader)
+				.withType(CsvFile.class)
+				.withSkipLines(1)
+				.withSeparator(SEMICOLON)
+				.build()
+				.parse());
 		
 	}
 	
-	private List<Movie> extractMovieByFile(List<CsvFile> moviesCsv) throws Exception {
+	private List<Movie> extractMovieByFile(Optional<List<CsvFile>> moviesCsv) throws Exception {
 		List<Movie> movies = new ArrayList<>();
-		
-		moviesCsv.forEach(csvFile -> {
-			Movie movie = new Movie();
-			movie.setTitle(csvFile.getTitle());
-			movie.setYear(csvFile.getYear());
-			movie.setWinner(csvFile.isWinner());
-			movie.setProducers(extraxtProducer(movie, csvFile.getProducers()));
-			movie.setStudios(extractStudio(movie, csvFile.getStudios()));
-			movies.add(movie);
+
+		moviesCsv.ifPresent(csvFiles -> {
+			csvFiles.stream().filter(csvFile -> csvFile.getProducers() != null).forEach(csvFile -> {
+				Movie movie = new Movie();
+				movie.setTitle(csvFile.getTitle());
+				movie.setYear(csvFile.getYear());
+				movie.setWinner(csvFile.isWinner());
+				movie.setProducers(extraxtProducer(movie, csvFile.getProducers()));
+				movie.setStudios(extractStudio(movie, csvFile.getStudios()));
+				movies.add(movie);
+			});
 		});
 		
 		return movies;
