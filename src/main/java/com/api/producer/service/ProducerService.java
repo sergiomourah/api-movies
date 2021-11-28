@@ -31,13 +31,18 @@ public class ProducerService {
 			awardsList.add(awards);
 		});
 
-		Awards awardsMin = awardsList.stream().min(Comparator.comparing(Awards::getInterval)).get();
+		Integer intervalMin = awardsList.stream().min(Comparator.comparing(Awards::getInterval)).get().getInterval();
 
-		Awards awardsMax = awardsList.stream().max(Comparator.comparing(Awards::getInterval)).get();
+		Integer intervalMax = awardsList.stream().max(Comparator.comparing(Awards::getInterval)).get().getInterval();
 
 		IntervalAwards intervalAwards = new IntervalAwards();
-		intervalAwards.setMinList(awardsMin);
-		intervalAwards.setMaxList(awardsMax);
+		awardsList.stream().filter(p-> p.getInterval() == intervalMax).forEach(awardsMax-> {
+			intervalAwards.setMaxList(awardsMax);
+		});
+
+		awardsList.stream().filter(p-> p.getInterval() == intervalMin).forEach(awardsMax-> {
+			intervalAwards.setMinList(awardsMax);
+		});
 
 		return intervalAwards;
 		
